@@ -19,14 +19,27 @@ fn startup(
     });
 
     // Spawn a light
-    commands.spawn(DirectionalLightBundle::default());
+    commands.spawn(DirectionalLightBundle {
+        transform: Transform::from_xyz(3.0, 2.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..Default::default()
+    });
 
     // Spawn a cube
-    commands.spawn((MaterialMeshBundle {
+    commands.spawn(MaterialMeshBundle {
         mesh: meshes.add(Mesh::from(Cuboid {
-            half_size: Vec3::ONE,
+            half_size: Vec3::splat(0.5),
         })),
         material: materials.add(StandardMaterial::from(Color::rgb(1.0, 0.0, 0.0))),
+        transform: Transform::from_xyz(0.0, 0.5, 0.0),
         ..Default::default()
-    },));
+    });
+
+    // Spawn a plane
+    commands.spawn(MaterialMeshBundle {
+        mesh: meshes.add(Mesh::from(Plane3d {
+            normal: Direction3d::Y,
+        })),
+        material: materials.add(StandardMaterial::from(Color::rgb(0.0, 1.0, 0.0))),
+        ..Default::default()
+    });
 }
