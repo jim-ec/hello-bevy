@@ -38,6 +38,7 @@ mod camera {
 
     use bevy::{
         input::{mouse::MouseWheel, touchpad::TouchpadMagnify},
+        pbr::CascadeShadowConfigBuilder,
         prelude::*,
     };
 
@@ -76,6 +77,12 @@ mod camera {
                         shadows_enabled: true,
                         ..Default::default()
                     },
+                    cascade_shadow_config: CascadeShadowConfigBuilder {
+                        maximum_distance: 100.0,
+                        first_cascade_far_bound: 10.0,
+                        ..Default::default()
+                    }
+                    .into(),
                     transform: Transform::from_rotation(Quat::from_rotation_y(-TAU / 8.0)),
                     ..default()
                 },));
