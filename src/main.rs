@@ -3,7 +3,7 @@ use bevy::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(camera::CameraPlugin {})
+        .add_plugins(camera::CameraPlugin)
         .add_systems(Startup, startup)
         .run()
 }
@@ -34,12 +34,14 @@ fn startup(
 }
 
 mod camera {
+    use std::f32::consts::TAU;
+
     use bevy::{
         input::{mouse::MouseWheel, touchpad::TouchpadMagnify},
         prelude::*,
     };
 
-    pub struct CameraPlugin {}
+    pub struct CameraPlugin;
 
     #[derive(Component)]
     pub struct UserCamera {
@@ -66,7 +68,6 @@ mod camera {
                     radius: 5.0,
                 },
                 Camera3dBundle::default(),
-                VisibilityBundle::default(),
             ))
             .with_children(|commands| {
                 commands.spawn((DirectionalLightBundle {
@@ -74,6 +75,7 @@ mod camera {
                         shadows_enabled: true,
                         ..Default::default()
                     },
+                    transform: Transform::from_rotation(Quat::from_rotation_y(-TAU / 8.0)),
                     ..default()
                 },));
             });
@@ -94,11 +96,8 @@ mod camera {
         for (mut camera, mut transform) in query.iter_mut() {
             camera.yaw -= 0.01 * wheel.x;
             camera.pitch -= 0.01 * wheel.y;
-            camera.pitch = camera
-                .pitch
-                .clamp(-std::f32::consts::PI / 2.0, std::f32::consts::PI / 2.0);
+            camera.pitch = camera.pitch.clamp(-TAU / 4.0, TAU / 4.0);
             camera.radius *= 1.0 - magnify;
-            // camera.radius = camera.radius.clamp(0.1 * N as f32, 2.0 * N as f32);
 
             let yaw = Quat::from_rotation_y(camera.yaw);
             let pitch = Quat::from_rotation_x(camera.pitch);
