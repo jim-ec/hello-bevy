@@ -1,18 +1,23 @@
 use std::f32::consts::TAU;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, render::mesh::PlaneMeshBuilder};
 
 fn main() {
     App::new()
+        .insert_resource(AmbientLight {
+            brightness: 1000.,
+            ..default()
+        })
         .add_plugins(DefaultPlugins)
         .add_plugins(camera::CameraPlugin)
+        .insert_resource(Msaa::Off)
         .add_systems(Startup, startup)
         .add_systems(Update, update)
         .run()
 }
 
 #[derive(Debug, Component)]
-struct Marker;
+struct Marker(f32);
 
 fn startup(
     mut commands: Commands,
@@ -21,23 +26,52 @@ fn startup(
 ) {
     // Spawn a cube
     commands.spawn((
-        Marker,
+        Marker(0.0),
         PbrBundle {
             mesh: meshes.add(Mesh::from(Cuboid {
                 half_size: Vec3::splat(0.5),
             })),
-            material: materials.add(StandardMaterial::from(Color::WHITE)),
-            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+            material: materials
+                .add(StandardMaterial {
+                    base_color: Color::rgb(0.5, 0.5, 0.5),
+                    ..Default::default()
+                })
+                .clone(),
+            transform: Transform::from_xyz(1.0, 0.5, 0.0),
+            ..Default::default()
+        },
+    ));
+    commands.spawn((
+        Marker(1.5),
+        PbrBundle {
+            mesh: meshes.add(Mesh::from(Cuboid {
+                half_size: Vec3::splat(0.5),
+            })),
+            material: materials
+                .add(StandardMaterial {
+                    base_color: Color::rgb(0.5, 0.5, 0.5),
+                    ..Default::default()
+                })
+                .clone(),
+            transform: Transform::from_xyz(0.0, 0.5, 1.0),
             ..Default::default()
         },
     ));
 
     // Spawn a plane
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(Plane3d {
-            normal: Direction3d::Y,
+        mesh: meshes.add(Mesh::from(PlaneMeshBuilder {
+            plane: Plane3d {
+                normal: Direction3d::Y,
+            },
+            half_size: Vec2::splat(4.0),
         })),
-        material: materials.add(StandardMaterial::from(Color::WHITE)),
+        material: materials
+            .add(StandardMaterial {
+                base_color: Color::rgb(0.5, 0.5, 0.5),
+                ..Default::default()
+            })
+            .clone(),
         ..Default::default()
     });
 }
@@ -45,13 +79,13 @@ fn startup(
 fn update(
     time: Res<Time>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    query: Query<&Handle<StandardMaterial>, With<Marker>>,
+    query: Query<(&Handle<StandardMaterial>, &Marker)>,
 ) {
-    for material in query.iter() {
+    for (material, &Marker(offset)) in query.iter() {
         materials.get_mut(material).unwrap().base_color = Color::rgb(
-            (time.elapsed_seconds().sin() * 0.5 + 0.5) as f32,
-            ((time.elapsed_seconds() + TAU / 3.0).sin() * 0.5 + 0.5) as f32,
-            ((time.elapsed_seconds() + 2.0 * TAU / 3.0).sin() * 0.5 + 0.5) as f32,
+            ((offset + time.elapsed_seconds()).sin() * 0.5 + 0.5) as f32,
+            ((offset + time.elapsed_seconds() + TAU / 3.0).sin() * 0.5 + 0.5) as f32,
+            ((offset + time.elapsed_seconds() + 2.0 * TAU / 3.0).sin() * 0.5 + 0.5) as f32,
         );
     }
 }
@@ -61,7 +95,7 @@ mod camera {
 
     use bevy::{
         input::{mouse::MouseWheel, touchpad::TouchpadMagnify},
-        pbr::CascadeShadowConfigBuilder,
+        pbr::{CascadeShadowConfigBuilder, ScreenSpaceAmbientOcclusionBundle},
         prelude::*,
     };
 
@@ -87,17 +121,19 @@ mod camera {
             .spawn((
                 UserCamera {
                     target: Vec3::ZERO,
-                    yaw: f32::to_radians(15.0),
-                    pitch: f32::to_radians(-40.0),
+                    yaw: f32::to_radians(135.0),
+                    pitch: f32::to_radians(-45.0),
                     radius: 5.0,
                 },
                 VisibilityBundle::default(),
                 Camera3dBundle::default(),
+                ScreenSpaceAmbientOcclusionBundle::default(),
             ))
             .with_children(|commands| {
                 commands.spawn((DirectionalLightBundle {
                     directional_light: DirectionalLight {
                         shadows_enabled: true,
+                        illuminance: 1000.0,
                         ..Default::default()
                     },
                     cascade_shadow_config: CascadeShadowConfigBuilder {
