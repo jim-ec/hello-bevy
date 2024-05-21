@@ -1,3 +1,5 @@
+use std::f32::consts::TAU;
+
 use bevy::prelude::*;
 
 fn main() {
@@ -5,8 +7,12 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(camera::CameraPlugin)
         .add_systems(Startup, startup)
+        .add_systems(Update, update)
         .run()
 }
+
+#[derive(Debug, Component)]
+struct Marker;
 
 fn startup(
     mut commands: Commands,
@@ -14,23 +20,40 @@ fn startup(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     // Spawn a cube
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(Cuboid {
-            half_size: Vec3::splat(0.5),
-        })),
-        material: materials.add(StandardMaterial::from(Color::rgb(1.0, 0.0, 0.0))),
-        transform: Transform::from_xyz(0.0, 0.5, 0.0),
-        ..Default::default()
-    });
+    commands.spawn((
+        Marker,
+        PbrBundle {
+            mesh: meshes.add(Mesh::from(Cuboid {
+                half_size: Vec3::splat(0.5),
+            })),
+            material: materials.add(StandardMaterial::from(Color::WHITE)),
+            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+            ..Default::default()
+        },
+    ));
 
     // Spawn a plane
     commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(Plane3d {
             normal: Direction3d::Y,
         })),
-        material: materials.add(StandardMaterial::from(Color::rgb(0.0, 1.0, 0.0))),
+        material: materials.add(StandardMaterial::from(Color::WHITE)),
         ..Default::default()
     });
+}
+
+fn update(
+    time: Res<Time>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    query: Query<&Handle<StandardMaterial>, With<Marker>>,
+) {
+    for material in query.iter() {
+        materials.get_mut(material).unwrap().base_color = Color::rgb(
+            (time.elapsed_seconds().sin() * 0.5 + 0.5) as f32,
+            ((time.elapsed_seconds() + TAU / 3.0).sin() * 0.5 + 0.5) as f32,
+            ((time.elapsed_seconds() + 2.0 * TAU / 3.0).sin() * 0.5 + 0.5) as f32,
+        );
+    }
 }
 
 mod camera {
