@@ -67,6 +67,7 @@ mod camera {
                     pitch: f32::to_radians(-40.0),
                     radius: 5.0,
                 },
+                VisibilityBundle::default(),
                 Camera3dBundle::default(),
             ))
             .with_children(|commands| {
@@ -85,13 +86,14 @@ mod camera {
         mut query: Query<(&mut UserCamera, &mut Transform)>,
         mut wheel: EventReader<MouseWheel>,
         mut magnify: EventReader<TouchpadMagnify>,
+        keys: Res<ButtonInput<KeyCode>>,
     ) {
         let magnify: f32 = magnify.read().map(|m| m.0).sum();
 
         let wheel: Vec2 = wheel
             .read()
             .map(|&MouseWheel { x, y, .. }| Vec2::new(x, y))
-            .sum::<Vec2>();
+            .sum();
 
         for (mut camera, mut transform) in query.iter_mut() {
             camera.yaw -= 0.01 * wheel.x;
@@ -101,8 +103,21 @@ mod camera {
 
             let yaw = Quat::from_rotation_y(camera.yaw);
             let pitch = Quat::from_rotation_x(camera.pitch);
+
+            camera.target += yaw
+                * 0.25
+                * Vec3::new(
+                    keys.pressed(KeyCode::KeyD) as i8 as f32
+                        - keys.pressed(KeyCode::KeyA) as i8 as f32,
+                    0.0,
+                    keys.pressed(KeyCode::KeyS) as i8 as f32
+                        - keys.pressed(KeyCode::KeyW) as i8 as f32,
+                )
+                .normalize_or_zero();
+
             let rotation = yaw * pitch;
             let translation = rotation * Vec3::Z * camera.radius + camera.target;
+
             transform.translation = translation;
             transform.rotation = rotation;
         }
