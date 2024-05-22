@@ -299,7 +299,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy-test"
+name = "bevy-project-template"
 version = "0.1.0"
 dependencies = [
  "bevy",
