@@ -1,8 +1,8 @@
-use std::f32::consts::TAU;
+use std::{f32::consts::TAU, process::Termination};
 
 use bevy::{prelude::*, render::mesh::PlaneMeshBuilder};
 
-fn main() {
+fn main() -> impl Termination {
     App::new()
         .insert_resource(AmbientLight {
             brightness: 1000.,
@@ -33,7 +33,7 @@ fn startup(
             })),
             material: materials
                 .add(StandardMaterial {
-                    base_color: Color::rgb(0.5, 0.5, 0.5),
+                    base_color: Color::srgb(0.5, 0.5, 0.5),
                     ..Default::default()
                 })
                 .clone(),
@@ -49,7 +49,7 @@ fn startup(
             })),
             material: materials
                 .add(StandardMaterial {
-                    base_color: Color::rgb(0.5, 0.5, 0.5),
+                    base_color: Color::srgb(0.5, 0.5, 0.5),
                     ..Default::default()
                 })
                 .clone(),
@@ -62,13 +62,14 @@ fn startup(
     commands.spawn(PbrBundle {
         mesh: meshes.add(Mesh::from(PlaneMeshBuilder {
             plane: Plane3d {
-                normal: Direction3d::Y,
+                normal: Dir3::Y,
+                half_size: Vec2::splat(4.0),
             },
-            half_size: Vec2::splat(4.0),
+            subdivisions: 0,
         })),
         material: materials
             .add(StandardMaterial {
-                base_color: Color::rgb(0.5, 0.5, 0.5),
+                base_color: Color::srgb(0.5, 0.5, 0.5),
                 ..Default::default()
             })
             .clone(),
@@ -82,7 +83,7 @@ fn update(
     query: Query<(&Handle<StandardMaterial>, &Marker)>,
 ) {
     for (material, &Marker(offset)) in query.iter() {
-        materials.get_mut(material).unwrap().base_color = Color::rgb(
+        materials.get_mut(material).unwrap().base_color = Color::srgb(
             ((offset + time.elapsed_seconds()).sin() * 0.5 + 0.5) as f32,
             ((offset + time.elapsed_seconds() + TAU / 3.0).sin() * 0.5 + 0.5) as f32,
             ((offset + time.elapsed_seconds() + 2.0 * TAU / 3.0).sin() * 0.5 + 0.5) as f32,
@@ -94,7 +95,10 @@ mod camera {
     use std::f32::consts::TAU;
 
     use bevy::{
-        input::{mouse::MouseWheel, touchpad::TouchpadMagnify},
+        input::{
+            gestures::PinchGesture,
+            mouse::{MouseScrollUnit, MouseWheel},
+        },
         pbr::{CascadeShadowConfigBuilder, ScreenSpaceAmbientOcclusionBundle},
         prelude::*,
     };
@@ -151,21 +155,32 @@ mod camera {
     pub fn update(
         mut query: Query<(&mut UserCamera, &mut Transform)>,
         mut wheel: EventReader<MouseWheel>,
-        mut magnify: EventReader<TouchpadMagnify>,
+        mut magnify: EventReader<PinchGesture>,
         keys: Res<ButtonInput<KeyCode>>,
     ) {
-        let magnify: f32 = magnify.read().map(|m| m.0).sum();
+        let mut magnification = 0.0;
+        let mut scroll = Vec2::ZERO;
 
-        let wheel: Vec2 = wheel
-            .read()
-            .map(|&MouseWheel { x, y, .. }| Vec2::new(x, y))
-            .sum();
+        for event in magnify.read() {
+            magnification += event.0;
+        }
+
+        for event in wheel.read() {
+            match event.unit {
+                MouseScrollUnit::Line => {
+                    magnification -= 0.01 * event.y;
+                }
+                MouseScrollUnit::Pixel => {
+                    scroll += Vec2::new(event.x, event.y);
+                }
+            }
+        }
 
         for (mut camera, mut transform) in query.iter_mut() {
-            camera.yaw -= 0.01 * wheel.x;
-            camera.pitch -= 0.01 * wheel.y;
+            camera.yaw -= 0.01 * scroll.x;
+            camera.pitch -= 0.01 * scroll.y;
             camera.pitch = camera.pitch.clamp(-TAU / 4.0, TAU / 4.0);
-            camera.radius *= 1.0 - magnify;
+            camera.radius *= 1.0 - magnification;
 
             let yaw = Quat::from_rotation_y(camera.yaw);
             let pitch = Quat::from_rotation_x(camera.pitch);
