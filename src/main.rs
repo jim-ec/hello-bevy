@@ -108,35 +108,32 @@ mod camera {
     }
 
     fn startup(mut commands: Commands) {
-        commands
-            .spawn((
-                UserCamera {
-                    target: Vec3::ZERO,
-                    yaw: f32::to_radians(135.0),
-                    pitch: f32::to_radians(-45.0),
-                    radius: 5.0,
+        commands.spawn((
+            UserCamera {
+                target: Vec3::ZERO,
+                yaw: f32::to_radians(135.0),
+                pitch: f32::to_radians(-45.0),
+                radius: 5.0,
+            },
+            Visibility::default(),
+            Camera3d::default(),
+            ScreenSpaceAmbientOcclusion::default(),
+            TemporalAntiAliasing::default(),
+            Msaa::Off,
+            children![
+                DirectionalLight {
+                    shadows_enabled: true,
+                    illuminance: 1000.0,
+                    ..Default::default()
                 },
-                Visibility::default(),
-                Camera3d::default(),
-                ScreenSpaceAmbientOcclusion::default(),
-                TemporalAntiAliasing::default(),
-                Msaa::Off,
-            ))
-            .with_children(|commands| {
-                commands.spawn((
-                    DirectionalLight {
-                        shadows_enabled: true,
-                        illuminance: 1000.0,
-                        ..Default::default()
-                    },
-                    CascadeShadowConfig::from(CascadeShadowConfigBuilder {
-                        maximum_distance: 100.0,
-                        first_cascade_far_bound: 10.0,
-                        ..Default::default()
-                    }),
-                    Transform::from_rotation(Quat::from_rotation_y(-TAU / 8.0)),
-                ));
-            });
+                CascadeShadowConfig::from(CascadeShadowConfigBuilder {
+                    maximum_distance: 100.0,
+                    first_cascade_far_bound: 10.0,
+                    ..Default::default()
+                }),
+                Transform::from_rotation(Quat::from_rotation_y(-TAU / 8.0)),
+            ],
+        ));
     }
 
     pub fn update(
