@@ -26,8 +26,8 @@ impl Plugin for OrbitPlugin {
 
 pub fn update(
     mut query: Query<(&mut OrbitControls, &mut Transform)>,
-    mut wheel: EventReader<MouseWheel>,
-    mut magnify: EventReader<PinchGesture>,
+    mut wheel: MessageReader<MouseWheel>,
+    mut magnify: MessageReader<PinchGesture>,
     keys: Res<ButtonInput<KeyCode>>,
     buttons: Res<ButtonInput<MouseButton>>,
     motion: Res<AccumulatedMouseMotion>,

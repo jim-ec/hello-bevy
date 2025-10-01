@@ -3,10 +3,11 @@ mod orbit;
 use std::{f32::consts::TAU, process::Termination};
 
 use bevy::{
-    core_pipeline::experimental::taa::TemporalAntiAliasing,
-    pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder, ScreenSpaceAmbientOcclusion},
+    anti_alias::taa::TemporalAntiAliasing,
+    light::{CascadeShadowConfig, CascadeShadowConfigBuilder},
+    mesh::PlaneMeshBuilder,
+    pbr::ScreenSpaceAmbientOcclusion,
     prelude::*,
-    render::mesh::PlaneMeshBuilder,
 };
 use orbit::OrbitControls;
 
